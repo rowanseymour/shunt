@@ -11,7 +11,7 @@ import Testing
     }
 
     @Test func wildcardSubdomains() {
-        #expect(RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "textit.atlassian.net"))
+        #expect(RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "acme.atlassian.net"))
         #expect(RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "a.b.atlassian.net"))
         #expect(!RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "atlassian.com"))
         #expect(!RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "notatlassian.net"))
