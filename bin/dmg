@@ -1,0 +1,36 @@
+#!/bin/bash
+# Builds Shunt.app as a universal binary and packages it into a drag-to-install
+# disk image. An optional version argument (e.g. "1.2.0") is stamped into the
+# app's Info.plist and the image name: bin/dmg 1.2.0 -> build/Shunt-1.2.0.dmg
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+VERSION="${1:-}"
+APP="build/Shunt.app"
+
+# assemble the app bundle for the host arch, then cross-compile the other
+# slice and merge (SwiftPM's own --arch flags require full Xcode)
+bin/build
+[[ "$(uname -m)" == "arm64" ]] && OTHER="x86_64" || OTHER="arm64"
+swift build -c release --triple "$OTHER-apple-macosx"
+OTHER_BIN="$(swift build -c release --triple "$OTHER-apple-macosx" --show-bin-path)/Shunt"
+lipo -create "$APP/Contents/MacOS/Shunt" "$OTHER_BIN" -output "$APP/Contents/MacOS/Shunt.universal"
+mv "$APP/Contents/MacOS/Shunt.universal" "$APP/Contents/MacOS/Shunt"
+
+if [[ -n "$VERSION" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
+fi
+codesign --force --sign - "$APP"
+
+STAGING="build/dmg"
+DMG="build/Shunt${VERSION:+-$VERSION}.dmg"
+
+rm -rf "$STAGING" "$DMG"
+mkdir -p "$STAGING"
+ditto "$APP" "$STAGING/Shunt.app"
+ln -s /Applications "$STAGING/Applications"
+
+hdiutil create -volname Shunt -srcfolder "$STAGING" -format UDZO -ov "$DMG"
+rm -rf "$STAGING"
+
+echo "Created $DMG"
