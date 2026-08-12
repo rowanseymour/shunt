@@ -7,6 +7,12 @@ cd "$(dirname "$0")/.."
 
 bin/build
 
+# The footer shows the bundle version; stamp the bare release version rather than
+# the dev-suffixed one bin/build embeds, so the README doesn't churn per commit.
+VERSION="$(git describe --tags --abbrev=0 | sed 's/^v//')"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" build/Shunt.app/Contents/Info.plist
+codesign --force --sign - build/Shunt.app
+
 FAKE_SUPPORT="$(mktemp -d)"
 trap 'rm -rf "$FAKE_SUPPORT"' EXIT
 
