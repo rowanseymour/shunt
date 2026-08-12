@@ -11,7 +11,17 @@ A macOS menu bar app that acts as your default browser and routes each link to a
 
 ## How it works
 
-Shunt registers as a handler for `http`/`https` URLs. When you set it as your default browser, every link you click outside a browser is sent to Shunt, which matches it against an ordered list of rules (first match wins) and forwards it to the chosen browser. Rules can match on host patterns (`*.atlassian.net`) and/or the app the link was clicked in. Anything unmatched goes to a fallback browser.
+Shunt registers as a handler for `http`/`https` URLs. When you set it as your default browser, every link you click outside a browser is sent to Shunt, which matches it against an ordered list of rules (first match wins) and forwards it to the chosen browser. Anything unmatched goes to a fallback browser.
+
+A rule matches on a URL pattern, the app the link was clicked in, or both. Patterns use `*` as a wildcard and can narrow to a path as well as a host:
+
+| Pattern | Matches |
+| --- | --- |
+| `*.atlassian.net` | any subdomain, plus the bare `atlassian.net` |
+| `github.com` | any URL on that host |
+| `github.com/nyaruka/*` | one section of a host, plus the bare `github.com/nyaruka` |
+
+Matching is case-insensitive and ignores query strings.
 
 For Chromium-based browsers (Chrome, Edge, Brave, Vivaldi, …) a rule can also target a specific browser profile, so work links can open in your work profile and everything else in your personal one.
 
@@ -27,7 +37,7 @@ bin/run       # builds and launches it
 bin/install   # builds and installs to /Applications
 bin/dmg       # builds and packages build/Shunt.dmg
 bin/screenshot # recaptures docs/settings.png from example data
-swift test    # runs the tests
+bin/test      # runs the tests
 ```
 
 ## License

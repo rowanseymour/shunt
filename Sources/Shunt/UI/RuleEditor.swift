@@ -10,7 +10,7 @@ struct RuleEditor: View {
     let onSave: (Rule) -> Void
 
     @State private var rule: Rule
-    @State private var patternsText: String
+    @State private var patternText: String
     @State private var sourceAppText: String
 
     init(rule: Rule, isNew: Bool, browsers: [Browser], profilesByBrowser: [String: [BrowserProfile]], onSave: @escaping (Rule) -> Void) {
@@ -19,7 +19,7 @@ struct RuleEditor: View {
         self.profilesByBrowser = profilesByBrowser
         self.onSave = onSave
         _rule = State(initialValue: rule)
-        _patternsText = State(initialValue: rule.patterns.joined(separator: ", "))
+        _patternText = State(initialValue: rule.pattern ?? "")
         _sourceAppText = State(initialValue: rule.sourceApp ?? "")
     }
 
@@ -39,9 +39,9 @@ struct RuleEditor: View {
                 .font(.headline)
 
             Form {
-                TextField("URL patterns", text: $patternsText, prompt: Text("*.atlassian.net, localhost"))
+                TextField("URL pattern", text: $patternText, prompt: Text("*.atlassian.net"))
                     .font(.body.monospaced())
-                Text("Comma-separated hosts; * matches anything")
+                Text("A host, optionally with a path (github.com/nyaruka/*); * matches anything")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -77,17 +77,15 @@ struct RuleEditor: View {
                 }
                 .keyboardShortcut(.cancelAction)
                 Button(isNew ? "Add" : "Save") {
-                    rule.patterns = patternsText
-                        .split(separator: ",")
-                        .map { $0.trimmingCharacters(in: .whitespaces) }
-                        .filter { !$0.isEmpty }
+                    let pattern = patternText.trimmingCharacters(in: .whitespaces)
+                    rule.pattern = pattern.isEmpty ? nil : pattern
                     let source = sourceAppText.trimmingCharacters(in: .whitespaces)
                     rule.sourceApp = source.isEmpty ? nil : source
                     onSave(rule)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(patternsText.trimmingCharacters(in: .whitespaces).isEmpty
+                .disabled(patternText.trimmingCharacters(in: .whitespaces).isEmpty
                     && sourceAppText.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }

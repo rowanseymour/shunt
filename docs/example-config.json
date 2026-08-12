@@ -2,16 +2,16 @@
   "fallbackBrowserID": "com.apple.Safari",
   "rules": [
     {
-      "patterns": ["localhost", "127.0.0.1"],
+      "pattern": "localhost",
       "browserID": "com.google.Chrome"
     },
     {
-      "patterns": ["*.github.com"],
+      "pattern": "github.com/nyaruka/*",
       "browserID": "com.google.Chrome",
       "profile": "Profile 1"
     },
     {
-      "patterns": ["*.atlassian.net", "meet.google.com"],
+      "pattern": "*.atlassian.net",
       "browserID": "com.google.Chrome",
       "profile": "Profile 1"
     },

@@ -105,7 +105,7 @@ struct SettingsView: View {
             ))
             .labelsHidden()
             VStack(alignment: .leading) {
-                Text(rule.patterns.isEmpty ? "any URL" : rule.patterns.joined(separator: ", "))
+                Text(rule.pattern ?? "any URL")
                     .font(.body.monospaced())
                 if let sourceApp = rule.sourceApp, !sourceApp.isEmpty {
                     Text("from \(sourceApp)")
