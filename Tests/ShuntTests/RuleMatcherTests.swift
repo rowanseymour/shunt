@@ -2,33 +2,70 @@ import Foundation
 import ShuntCore
 import Testing
 
-@Suite struct HostMatching {
+@Suite struct URLMatching {
+    private func matches(_ pattern: String, _ urlString: String) -> Bool {
+        RuleMatcher.urlMatches(pattern: pattern, url: URL(string: urlString)!)
+    }
+
     @Test func exactMatch() {
-        #expect(RuleMatcher.hostMatches(pattern: "example.com", host: "example.com"))
-        #expect(RuleMatcher.hostMatches(pattern: "Example.COM", host: "example.com"))
-        #expect(!RuleMatcher.hostMatches(pattern: "example.com", host: "www.example.com"))
-        #expect(!RuleMatcher.hostMatches(pattern: "example.com", host: "example.org"))
+        #expect(matches("example.com", "https://example.com"))
+        #expect(matches("Example.COM", "https://example.com"))
+        #expect(!matches("example.com", "https://www.example.com"))
+        #expect(!matches("example.com", "https://example.org"))
     }
 
     @Test func wildcardSubdomains() {
-        #expect(RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "acme.atlassian.net"))
-        #expect(RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "a.b.atlassian.net"))
-        #expect(!RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "atlassian.com"))
-        #expect(!RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "notatlassian.net"))
+        #expect(matches("*.atlassian.net", "https://acme.atlassian.net"))
+        #expect(matches("*.atlassian.net", "https://a.b.atlassian.net"))
+        #expect(!matches("*.atlassian.net", "https://atlassian.com"))
+        #expect(!matches("*.atlassian.net", "https://notatlassian.net"))
     }
 
     @Test func wildcardMatchesApex() {
-        #expect(RuleMatcher.hostMatches(pattern: "*.atlassian.net", host: "atlassian.net"))
+        #expect(matches("*.atlassian.net", "https://atlassian.net"))
     }
 
     @Test func infixWildcard() {
-        #expect(RuleMatcher.hostMatches(pattern: "github.*", host: "github.io"))
-        #expect(RuleMatcher.hostMatches(pattern: "*", host: "anything.example"))
+        #expect(matches("github.*", "https://github.io"))
+        #expect(matches("*", "https://anything.example"))
     }
 
     @Test func emptyAndWhitespace() {
-        #expect(!RuleMatcher.hostMatches(pattern: "", host: "example.com"))
-        #expect(RuleMatcher.hostMatches(pattern: "  example.com ", host: "example.com"))
+        #expect(!matches("", "https://example.com"))
+        #expect(matches("  example.com ", "https://example.com"))
+    }
+
+    @Test func hostPatternMatchesAnyPath() {
+        #expect(matches("example.com", "https://example.com/"))
+        #expect(matches("example.com", "https://example.com/some/deep/path"))
+    }
+
+    @Test func pathPatternNarrowsWithinAHost() {
+        #expect(matches("github.com/nyaruka/*", "https://github.com/nyaruka/shunt"))
+        #expect(matches("github.com/nyaruka/*", "https://github.com/nyaruka/shunt/pull/6"))
+        #expect(!matches("github.com/nyaruka/*", "https://github.com/rowanseymour/shunt"))
+        #expect(!matches("github.com/nyaruka/*", "https://gitlab.com/nyaruka/shunt"))
+    }
+
+    @Test func trailingWildcardAlsoMatchesTheBarePath() {
+        #expect(matches("github.com/nyaruka/*", "https://github.com/nyaruka"))
+        #expect(!matches("github.com/nyaruka/*", "https://github.com"))
+    }
+
+    @Test func pathPatternCombinesWithSubdomainWildcard() {
+        #expect(matches("*.atlassian.net/wiki/*", "https://acme.atlassian.net/wiki/spaces/ENG"))
+        #expect(matches("*.atlassian.net/wiki/*", "https://atlassian.net/wiki"))
+        #expect(!matches("*.atlassian.net/wiki/*", "https://acme.atlassian.net/browse/ENG-1"))
+    }
+
+    @Test func trailingSlashesAreIgnoredOnBothSides() {
+        #expect(matches("example.com/docs", "https://example.com/docs/"))
+        #expect(matches("example.com/docs/", "https://example.com/docs"))
+    }
+
+    @Test func queryStringsAreNotMatched() {
+        #expect(matches("github.com/nyaruka", "https://github.com/nyaruka?tab=repositories"))
+        #expect(!matches("github.com/*tab=repositories*", "https://github.com/nyaruka?tab=repositories"))
     }
 }
 
@@ -40,8 +77,8 @@ import Testing
 
     @Test func firstMatchWins() {
         let rules = [
-            Rule(patterns: ["*.example.com"], browserID: "first"),
-            Rule(patterns: ["www.example.com"], browserID: "second"),
+            Rule(pattern: "*.example.com", browserID: "first"),
+            Rule(pattern: "www.example.com", browserID: "second"),
         ]
         let match = RuleMatcher.firstMatch(for: url("https://www.example.com/x"), sourceApp: nil, in: rules)
         #expect(match?.browserID == "first")
@@ -49,8 +86,8 @@ import Testing
 
     @Test func disabledRulesAreSkipped() {
         let rules = [
-            Rule(patterns: ["example.com"], browserID: "off", enabled: false),
-            Rule(patterns: ["example.com"], browserID: "on"),
+            Rule(pattern: "example.com", browserID: "off", enabled: false),
+            Rule(pattern: "example.com", browserID: "on"),
         ]
         let match = RuleMatcher.firstMatch(for: url("https://example.com"), sourceApp: nil, in: rules)
         #expect(match?.browserID == "on")
@@ -63,26 +100,26 @@ import Testing
         #expect(!RuleMatcher.matches(rule, url: url("https://anything.example"), sourceApp: "com.apple.mail"))
     }
 
-    @Test func sourceAppPlusPatternsRequiresBoth() {
-        let rule = Rule(patterns: ["*.zoom.us"], sourceApp: slack, browserID: chrome)
+    @Test func sourceAppPlusPatternRequiresBoth() {
+        let rule = Rule(pattern: "*.zoom.us", sourceApp: slack, browserID: chrome)
         #expect(RuleMatcher.matches(rule, url: url("https://us02.zoom.us/j/1"), sourceApp: slack))
         #expect(!RuleMatcher.matches(rule, url: url("https://us02.zoom.us/j/1"), sourceApp: nil))
         #expect(!RuleMatcher.matches(rule, url: url("https://example.com"), sourceApp: slack))
     }
 
     @Test func patternRuleIgnoresSourceAppWhenUnset() {
-        let rule = Rule(patterns: ["example.com"], browserID: chrome)
+        let rule = Rule(pattern: "example.com", browserID: chrome)
         #expect(RuleMatcher.matches(rule, url: url("https://example.com"), sourceApp: slack))
         #expect(RuleMatcher.matches(rule, url: url("https://example.com"), sourceApp: nil))
     }
 
-    @Test func noPatternsNoSourceAppNeverMatches() {
+    @Test func noPatternNoSourceAppNeverMatches() {
         let rule = Rule(browserID: chrome)
         #expect(!RuleMatcher.matches(rule, url: url("https://example.com"), sourceApp: nil))
     }
 
     @Test func urlWithoutHostNeverMatches() {
-        let rule = Rule(patterns: ["*"], browserID: chrome)
+        let rule = Rule(pattern: "*", browserID: chrome)
         #expect(!RuleMatcher.matches(rule, url: url("mailto:a@b.com"), sourceApp: nil))
     }
 }
@@ -124,7 +161,7 @@ import Testing
 
 @Suite struct ConfigCodable {
     @Test func decodesMinimalHandEditedConfig() throws {
-        let json = #"{"rules": [{"patterns": ["*.example.com"], "browserID": "com.google.Chrome"}]}"#
+        let json = #"{"rules": [{"pattern": "*.example.com", "browserID": "com.google.Chrome"}]}"#
         let config = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
         #expect(config.fallbackBrowserID == "com.apple.Safari")
         #expect(config.rules.count == 1)
@@ -133,10 +170,25 @@ import Testing
         #expect(config.rules[0].profile == nil)
     }
 
+    @Test func legacyPatternListExpandsIntoOneRulePerPattern() throws {
+        let json = #"""
+        {"rules": [
+            {"patterns": ["localhost", "127.0.0.1"], "browserID": "com.google.Chrome", "profile": "Profile 1"},
+            {"sourceApp": "com.tinyspeck.slackmacgap", "browserID": "com.apple.Safari"}
+        ]}
+        """#
+        let config = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
+        #expect(config.rules.map(\.pattern) == ["localhost", "127.0.0.1", nil])
+        #expect(config.rules.prefix(2).allSatisfy { $0.browserID == "com.google.Chrome" && $0.profile == "Profile 1" })
+        #expect(config.rules[2].sourceApp == "com.tinyspeck.slackmacgap")
+        // Expanded rules can't share an identity or SwiftUI lists misbehave.
+        #expect(Set(config.rules.map(\.id)).count == 3)
+    }
+
     @Test func roundTrips() throws {
         let config = Config(
             fallbackBrowserID: "org.mozilla.firefox",
-            rules: [Rule(patterns: ["localhost"], sourceApp: "com.apple.dt.Xcode", browserID: "com.google.Chrome", profile: "Profile 1", enabled: false)]
+            rules: [Rule(pattern: "localhost", sourceApp: "com.apple.dt.Xcode", browserID: "com.google.Chrome", profile: "Profile 1", enabled: false)]
         )
         let data = try JSONEncoder().encode(config)
         let decoded = try JSONDecoder().decode(Config.self, from: data)
