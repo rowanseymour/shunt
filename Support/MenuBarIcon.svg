@@ -1,6 +1,8 @@
 <svg width="1008" height="1008" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
   <!-- Monochrome template image for the menu bar: a simplified take on AppIcon.svg.
-       Pure black on transparent; macOS recolors it for menu bar state/appearance. -->
+       Pure black on transparent; macOS recolors it for menu bar state/appearance.
+       Scaled so the glyph fills ~16 of 18 pt, matching typical menu bar icons. -->
+  <g transform="translate(18 18) scale(1.4) translate(-18 -18)">
   <circle cx="18" cy="18" r="10.6" fill="none" stroke="#000000" stroke-width="1.7"/>
   <g fill="none" stroke="#000000" stroke-opacity="0.45" stroke-width="0.9">
     <ellipse cx="18" cy="18" rx="4.9" ry="10.6"/>
@@ -15,4 +17,5 @@
   <circle cx="24.2" cy="13.8" r="1.7" fill="#000000"/>
   <circle cx="25.3" cy="18" r="1.7" fill="#000000"/>
   <circle cx="24.2" cy="22.2" r="1.7" fill="#000000"/>
+  </g>
 </svg>
