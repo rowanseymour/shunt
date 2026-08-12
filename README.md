@@ -1,4 +1,7 @@
-# Shunt
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/banner-dark.svg">
+  <img src="docs/banner-light.svg" alt="Shunt — route every link to the right browser">
+</picture>
 
 A macOS menu bar app that acts as your default browser and routes each link to a *real* browser based on rules.
 
