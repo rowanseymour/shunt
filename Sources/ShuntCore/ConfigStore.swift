@@ -4,8 +4,7 @@ import Foundation
 /// so it stays human-readable and easy to back up or edit by hand.
 public enum ConfigStore {
     public static var fileURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Shunt/config.json")
+        AppSupport.directory.appendingPathComponent("Shunt/config.json")
     }
 
     public static func load() -> Config? {
