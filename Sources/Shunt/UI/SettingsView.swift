@@ -5,7 +5,6 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var editingRule: Rule?
     @State private var editingIsNew = false
-    @State private var testInput = ""
 
     var body: some View {
         @Bindable var model = model
@@ -42,7 +41,7 @@ struct SettingsView: View {
 
             Divider()
 
-            testRow
+            footer
         }
         .padding(20)
         .frame(width: 560, height: 480)
@@ -135,23 +134,19 @@ struct SettingsView: View {
         .opacity(rule.enabled ? 1 : 0.5)
     }
 
-    private var testRow: some View {
+    private var footer: some View {
         HStack {
-            TextField("Paste a URL to test your rules", text: $testInput)
-                .textFieldStyle(.roundedBorder)
-                .font(.body.monospaced())
-            Text(testResult)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            Text("Shunt \(appVersion)")
+            Text("·")
+            Link("Rowan Seymour", destination: URL(string: "https://github.com/rowanseymour")!)
+            Spacer()
+            Link("Report a bug", destination: URL(string: "https://github.com/rowanseymour/shunt/issues")!)
         }
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 
-    private var testResult: String {
-        guard !testInput.isEmpty else { return "" }
-        guard let url = URL(string: testInput), url.host != nil else { return "not a URL" }
-        if let rule = RuleMatcher.firstMatch(for: url, sourceApp: nil, in: model.config.rules) {
-            return "\(rule.label) → \(model.destinationName(browserID: rule.browserID, profile: rule.profile))"
-        }
-        return "fallback → \(model.browserName(for: model.config.fallbackBrowserID))"
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
     }
 }
