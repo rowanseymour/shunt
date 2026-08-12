@@ -1,0 +1,23 @@
+{
+  "fallbackBrowserID": "com.apple.Safari",
+  "rules": [
+    {
+      "patterns": ["localhost", "127.0.0.1"],
+      "browserID": "com.google.Chrome"
+    },
+    {
+      "patterns": ["*.github.com"],
+      "browserID": "com.google.Chrome",
+      "profile": "Profile 1"
+    },
+    {
+      "patterns": ["*.atlassian.net", "meet.google.com"],
+      "browserID": "com.google.Chrome",
+      "profile": "Profile 1"
+    },
+    {
+      "sourceApp": "com.tinyspeck.slackmacgap",
+      "browserID": "com.apple.Safari"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+#!/bin/bash
+# Captures docs/settings.png for the README. Launches the app against a throwaway
+# Application Support directory seeded from docs/example-config.json plus fake
+# Chrome profiles, so the screenshot is reproducible and never shows real user data.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+bin/build
+
+# The footer shows the bundle version; stamp the bare release version rather than
+# the dev-suffixed one bin/build embeds, so the README doesn't churn per commit.
+VERSION="$(git describe --tags --abbrev=0 | sed 's/^v//')"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" build/Shunt.app/Contents/Info.plist
+codesign --force --sign - build/Shunt.app
+
+FAKE_SUPPORT="$(mktemp -d)"
+trap 'rm -rf "$FAKE_SUPPORT"' EXIT
+
+mkdir -p "$FAKE_SUPPORT/Shunt" "$FAKE_SUPPORT/Google/Chrome"
+cp docs/example-config.json "$FAKE_SUPPORT/Shunt/config.json"
+cat > "$FAKE_SUPPORT/Google/Chrome/Local State" <<'EOF'
+{"profile": {"info_cache": {"Default": {"name": "Personal"}, "Profile 1": {"name": "Work"}}}}
+EOF
+
+# Only one Shunt instance can own the URL handler and menu bar icon, so park any
+# running copy and bring it back when we're done.
+WAS_RUNNING=0
+if pgrep -qf "Shunt.app/Contents/MacOS/Shunt"; then
+    WAS_RUNNING=1
+    pkill -f "Shunt.app/Contents/MacOS/Shunt"
+fi
+
+SHUNT_APP_SUPPORT="$FAKE_SUPPORT" SHUNT_OPEN_SETTINGS=1 build/Shunt.app/Contents/MacOS/Shunt &
+APP_PID=$!
+cleanup() {
+    kill "$APP_PID" 2>/dev/null || true
+    if [ "$WAS_RUNNING" = 1 ]; then
+        open /Applications/Shunt.app
+    fi
+    rm -rf "$FAKE_SUPPORT"
+}
+trap cleanup EXIT
+
+# Window names of other processes aren't visible without extra permissions, so
+# find the settings window by owner and layer (status items sit on higher layers).
+window_id() {
+    swift -e '
+        import AppKit
+        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as! [[String: Any]]
+        for w in windows
+        where w[kCGWindowOwnerName as String] as? String == "Shunt" && w[kCGWindowLayer as String] as? Int == 0 {
+            print(w[kCGWindowNumber as String] as! Int)
+            break
+        }'
+}
+
+WINDOW_ID=""
+for _ in $(seq 1 20); do
+    sleep 0.5
+    WINDOW_ID="$(window_id)"
+    [ -n "$WINDOW_ID" ] && break
+done
+if [ -z "$WINDOW_ID" ]; then
+    echo "error: settings window never appeared" >&2
+    exit 1
+fi
+
+sleep 1  # let focus and rendering settle
+screencapture -x -l "$WINDOW_ID" docs/settings.png
+
+echo "Captured docs/settings.png"
