@@ -5,7 +5,9 @@
 
 A macOS menu bar app that acts as your default browser and routes each link to a *real* browser based on rules.
 
-<img src="docs/settings.png" width="560" alt="Shunt settings window showing routing rules">
+<p align="center">
+  <img src="docs/settings.png" width="560" alt="Shunt settings window showing routing rules">
+</p>
 
 ## How it works
 
