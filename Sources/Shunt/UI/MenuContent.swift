@@ -11,7 +11,7 @@ struct MenuContent: View {
         if !model.recent.isEmpty {
             Section("Recent") {
                 ForEach(model.recent) { record in
-                    Button("\(record.url) → \(record.browserName)") {
+                    Button("\(record.url) → \(record.destination)") {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(record.url, forType: .string)
                     }

@@ -6,19 +6,31 @@ struct RuleEditor: View {
 
     let isNew: Bool
     let browsers: [Browser]
+    let profilesByBrowser: [String: [BrowserProfile]]
     let onSave: (Rule) -> Void
 
     @State private var rule: Rule
     @State private var patternsText: String
     @State private var sourceAppText: String
 
-    init(rule: Rule, isNew: Bool, browsers: [Browser], onSave: @escaping (Rule) -> Void) {
+    init(rule: Rule, isNew: Bool, browsers: [Browser], profilesByBrowser: [String: [BrowserProfile]], onSave: @escaping (Rule) -> Void) {
         self.isNew = isNew
         self.browsers = browsers
+        self.profilesByBrowser = profilesByBrowser
         self.onSave = onSave
         _rule = State(initialValue: rule)
         _patternsText = State(initialValue: rule.patterns.joined(separator: ", "))
         _sourceAppText = State(initialValue: rule.sourceApp ?? "")
+    }
+
+    /// Profiles of the selected browser, keeping a stale selection visible so the
+    /// picker stays valid if the profile was deleted since the rule was created.
+    private var profiles: [BrowserProfile] {
+        var profiles = profilesByBrowser[rule.browserID] ?? []
+        if let selected = rule.profile, !profiles.contains(where: { $0.directory == selected }) {
+            profiles.append(BrowserProfile(directory: selected, name: selected))
+        }
+        return profiles
     }
 
     var body: some View {
@@ -42,6 +54,18 @@ struct RuleEditor: View {
                 Picker("Open in", selection: $rule.browserID) {
                     ForEach(browsers) { browser in
                         Text(browser.name).tag(browser.id)
+                    }
+                }
+                .onChange(of: rule.browserID) {
+                    rule.profile = nil
+                }
+
+                if !profiles.isEmpty {
+                    Picker("Profile", selection: $rule.profile) {
+                        Text("Last used").tag(String?.none)
+                        ForEach(profiles) { profile in
+                            Text(profile.name).tag(String?.some(profile.directory))
+                        }
                     }
                 }
             }

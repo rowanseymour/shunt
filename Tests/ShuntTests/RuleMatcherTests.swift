@@ -87,6 +87,41 @@ import Testing
     }
 }
 
+@Suite struct ChromiumProfileParsing {
+    @Test func parsesInfoCacheSortedByName() {
+        let json = #"""
+        {"profile": {"info_cache": {
+            "Profile 1": {"name": "Work", "gaia_name": "Rowan"},
+            "Default": {"name": "Personal"}
+        }}}
+        """#
+        let profiles = ChromiumProfiles.parse(localState: Data(json.utf8))
+        #expect(profiles == [
+            BrowserProfile(directory: "Default", name: "Personal"),
+            BrowserProfile(directory: "Profile 1", name: "Work"),
+        ])
+    }
+
+    @Test func fallsBackToDirectoryWhenNameMissingOrEmpty() {
+        let json = #"{"profile": {"info_cache": {"Profile 2": {"name": ""}, "Profile 3": {}}}}"#
+        let profiles = ChromiumProfiles.parse(localState: Data(json.utf8))
+        #expect(profiles.map(\.name) == ["Profile 2", "Profile 3"])
+    }
+
+    @Test func malformedLocalStateGivesNoProfiles() {
+        #expect(ChromiumProfiles.parse(localState: Data("not json".utf8)).isEmpty)
+        #expect(ChromiumProfiles.parse(localState: Data("{}".utf8)).isEmpty)
+        #expect(ChromiumProfiles.parse(localState: Data(#"{"profile": {}}"#.utf8)).isEmpty)
+    }
+
+    @Test func dataDirectoriesForKnownBrowsersOnly() {
+        #expect(ChromiumProfiles.dataDirectory(forBundleID: "com.google.Chrome") == "Google/Chrome")
+        #expect(ChromiumProfiles.dataDirectory(forBundleID: "com.brave.Browser") == "BraveSoftware/Brave-Browser")
+        #expect(ChromiumProfiles.dataDirectory(forBundleID: "com.apple.Safari") == nil)
+        #expect(ChromiumProfiles.dataDirectory(forBundleID: "org.mozilla.firefox") == nil)
+    }
+}
+
 @Suite struct ConfigCodable {
     @Test func decodesMinimalHandEditedConfig() throws {
         let json = #"{"rules": [{"patterns": ["*.example.com"], "browserID": "com.google.Chrome"}]}"#
@@ -95,12 +130,13 @@ import Testing
         #expect(config.rules.count == 1)
         #expect(config.rules[0].enabled)
         #expect(config.rules[0].sourceApp == nil)
+        #expect(config.rules[0].profile == nil)
     }
 
     @Test func roundTrips() throws {
         let config = Config(
             fallbackBrowserID: "org.mozilla.firefox",
-            rules: [Rule(patterns: ["localhost"], sourceApp: "com.apple.dt.Xcode", browserID: "com.google.Chrome", enabled: false)]
+            rules: [Rule(patterns: ["localhost"], sourceApp: "com.apple.dt.Xcode", browserID: "com.google.Chrome", profile: "Profile 1", enabled: false)]
         )
         let data = try JSONEncoder().encode(config)
         let decoded = try JSONDecoder().decode(Config.self, from: data)

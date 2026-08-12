@@ -10,6 +10,9 @@ public struct Rule: Identifiable, Hashable, Sendable, Codable {
     public var sourceApp: String?
     /// Bundle identifier of the browser to open the URL in.
     public var browserID: String
+    /// Profile directory to open the URL in, e.g. "Profile 1". Only supported for
+    /// Chromium-based browsers; nil means the browser's last-used profile.
+    public var profile: String?
     public var enabled: Bool
 
     /// Short human-readable label for menus and the recent-routes list.
@@ -18,14 +21,15 @@ public struct Rule: Identifiable, Hashable, Sendable, Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, patterns, sourceApp, browserID, enabled
+        case id, patterns, sourceApp, browserID, profile, enabled
     }
 
-    public init(id: UUID = UUID(), patterns: [String] = [], sourceApp: String? = nil, browserID: String, enabled: Bool = true) {
+    public init(id: UUID = UUID(), patterns: [String] = [], sourceApp: String? = nil, browserID: String, profile: String? = nil, enabled: Bool = true) {
         self.id = id
         self.patterns = patterns
         self.sourceApp = sourceApp
         self.browserID = browserID
+        self.profile = profile
         self.enabled = enabled
     }
 
@@ -36,6 +40,7 @@ public struct Rule: Identifiable, Hashable, Sendable, Codable {
         patterns = try c.decodeIfPresent([String].self, forKey: .patterns) ?? []
         sourceApp = try c.decodeIfPresent(String.self, forKey: .sourceApp)
         browserID = try c.decode(String.self, forKey: .browserID)
+        profile = try c.decodeIfPresent(String.self, forKey: .profile)
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
     }
 }
