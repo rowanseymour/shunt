@@ -26,6 +26,7 @@ bin/build     # builds build/Shunt.app
 bin/run       # builds and launches it
 bin/install   # builds and installs to /Applications
 bin/dmg       # builds and packages build/Shunt.dmg
+bin/screenshot # recaptures docs/settings.png from example data
 swift test    # runs the tests
 ```
 

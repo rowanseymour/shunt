@@ -39,7 +39,7 @@ enum Browsers {
     /// Profiles of the given browser, or empty if it doesn't support profile routing.
     static func profiles(forBrowserWithID id: String) -> [BrowserProfile] {
         guard let dataDirectory = ChromiumProfiles.dataDirectory(forBundleID: id) else { return [] }
-        let localState = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let localState = AppSupport.directory
             .appendingPathComponent(dataDirectory)
             .appendingPathComponent("Local State")
         guard let data = try? Data(contentsOf: localState) else { return [] }
