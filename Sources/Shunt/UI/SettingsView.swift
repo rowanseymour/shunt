@@ -47,7 +47,7 @@ struct SettingsView: View {
         .padding(20)
         .frame(width: 560, height: 480)
         .sheet(item: $editingRule) { rule in
-            RuleEditor(rule: rule, isNew: editingIsNew, browsers: model.browsers) { saved in
+            RuleEditor(rule: rule, isNew: editingIsNew, browsers: model.browsers, profilesByBrowser: model.profilesByBrowser) { saved in
                 if let index = model.config.rules.firstIndex(where: { $0.id == saved.id }) {
                     model.config.rules[index] = saved
                 } else {
@@ -117,7 +117,7 @@ struct SettingsView: View {
             Spacer()
             Image(systemName: "arrow.right")
                 .foregroundStyle(.secondary)
-            Text(model.browserName(for: rule.browserID))
+            Text(model.destinationName(browserID: rule.browserID, profile: rule.profile))
             Button {
                 editingRule = rule
                 editingIsNew = false
@@ -150,7 +150,7 @@ struct SettingsView: View {
         guard !testInput.isEmpty else { return "" }
         guard let url = URL(string: testInput), url.host != nil else { return "not a URL" }
         if let rule = RuleMatcher.firstMatch(for: url, sourceApp: nil, in: model.config.rules) {
-            return "\(rule.label) → \(model.browserName(for: rule.browserID))"
+            return "\(rule.label) → \(model.destinationName(browserID: rule.browserID, profile: rule.profile))"
         }
         return "fallback → \(model.browserName(for: model.config.fallbackBrowserID))"
     }

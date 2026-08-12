@@ -1,4 +1,5 @@
 import AppKit
+import ShuntCore
 
 struct Browser: Identifiable, Hashable {
     let id: String
@@ -35,10 +36,40 @@ enum Browsers {
             .flatMap { Bundle(url: $0)?.bundleIdentifier }
     }
 
-    static func open(_ url: URL, inBrowserWithID id: String) {
+    /// Profiles of the given browser, or empty if it doesn't support profile routing.
+    static func profiles(forBrowserWithID id: String) -> [BrowserProfile] {
+        guard let dataDirectory = ChromiumProfiles.dataDirectory(forBundleID: id) else { return [] }
+        let localState = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(dataDirectory)
+            .appendingPathComponent("Local State")
+        guard let data = try? Data(contentsOf: localState) else { return [] }
+        return ChromiumProfiles.parse(localState: data)
+    }
+
+    static func open(_ url: URL, inBrowserWithID id: String, profile: String? = nil) {
         let workspace = NSWorkspace.shared
+        if let profile, openInProfile(url, browserID: id, profile: profile) { return }
         guard let appURL = workspace.urlForApplication(withBundleIdentifier: id)
             ?? workspace.urlForApplication(withBundleIdentifier: "com.apple.Safari") else { return }
         workspace.open([url], withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// NSWorkspace can't pass arguments to an already-running app, so profile routing
+    /// launches the browser executable directly — Chromium hands the URL over to any
+    /// existing instance and exits.
+    private static func openInProfile(_ url: URL, browserID: String, profile: String) -> Bool {
+        guard ChromiumProfiles.dataDirectory(forBundleID: browserID) != nil,
+              let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browserID),
+              let executable = Bundle(url: appURL)?.executableURL else { return false }
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = ["--profile-directory=\(profile)", url.absoluteString]
+        do {
+            try process.run()
+            return true
+        } catch {
+            NSLog("Shunt: failed to launch \(executable.path): \(error)")
+            return false
+        }
     }
 }

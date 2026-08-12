@@ -13,6 +13,8 @@ A macOS menu bar app that acts as your default browser and routes each link to a
 
 Shunt registers as a handler for `http`/`https` URLs. When you set it as your default browser, every link you click outside a browser is sent to Shunt, which matches it against an ordered list of rules (first match wins) and forwards it to the chosen browser. Rules can match on host patterns (`*.atlassian.net`) and/or the app the link was clicked in. Anything unmatched goes to a fallback browser.
 
+For Chromium-based browsers (Chrome, Edge, Brave, Vivaldi, …) a rule can also target a specific browser profile, so work links can open in your work profile and everything else in your personal one.
+
 Config is stored as JSON in `~/Library/Application Support/Shunt/config.json`.
 
 ## Building

@@ -6,7 +6,7 @@ import ShuntCore
 struct RouteRecord: Identifiable, Sendable {
     let id = UUID()
     let url: String
-    let browserName: String
+    let destination: String
     let ruleLabel: String
 }
 
@@ -21,6 +21,8 @@ final class AppModel {
     var paused = false
     var recent: [RouteRecord] = []
     var browsers: [Browser] = []
+    /// Profiles per browser bundle ID; browsers without profile support are absent.
+    var profilesByBrowser: [String: [BrowserProfile]] = [:]
 
     private init() {
         if let loaded = ConfigStore.load() {
@@ -38,6 +40,10 @@ final class AppModel {
 
     func refreshBrowsers() {
         browsers = Browsers.installed()
+        profilesByBrowser = Dictionary(uniqueKeysWithValues: browsers.compactMap { browser in
+            let profiles = Browsers.profiles(forBrowserWithID: browser.id)
+            return profiles.isEmpty ? nil : (browser.id, profiles)
+        })
     }
 
     var isDefaultBrowser: Bool {
@@ -54,18 +60,27 @@ final class AppModel {
         browsers.first { $0.id == id }?.name ?? id
     }
 
+    /// Human-readable target, e.g. "Chrome" or "Chrome (Work)".
+    func destinationName(browserID: String, profile: String?) -> String {
+        let name = browserName(for: browserID)
+        guard let profile else { return name }
+        let profileName = profilesByBrowser[browserID]?.first { $0.directory == profile }?.name ?? profile
+        return "\(name) (\(profileName))"
+    }
+
     func route(_ url: URL, from sourceApp: String?) {
         let browserID: String
+        let profile: String?
         let ruleLabel: String
         if paused {
-            (browserID, ruleLabel) = (config.fallbackBrowserID, "paused")
+            (browserID, profile, ruleLabel) = (config.fallbackBrowserID, nil, "paused")
         } else if let rule = RuleMatcher.firstMatch(for: url, sourceApp: sourceApp, in: config.rules) {
-            (browserID, ruleLabel) = (rule.browserID, rule.label)
+            (browserID, profile, ruleLabel) = (rule.browserID, rule.profile, rule.label)
         } else {
-            (browserID, ruleLabel) = (config.fallbackBrowserID, "fallback")
+            (browserID, profile, ruleLabel) = (config.fallbackBrowserID, nil, "fallback")
         }
-        Browsers.open(url, inBrowserWithID: browserID)
-        recent.insert(RouteRecord(url: url.absoluteString, browserName: browserName(for: browserID), ruleLabel: ruleLabel), at: 0)
+        Browsers.open(url, inBrowserWithID: browserID, profile: profile)
+        recent.insert(RouteRecord(url: url.absoluteString, destination: destinationName(browserID: browserID, profile: profile), ruleLabel: ruleLabel), at: 0)
         if recent.count > 5 {
             recent.removeLast(recent.count - 5)
         }
