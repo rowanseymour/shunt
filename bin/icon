@@ -1,6 +1,6 @@
 #!/bin/bash
 # Regenerates the app's icon assets from their SVG sources using only built-in
-# macOS tools (qlmanage to rasterize, sips to scale, iconutil to pack):
+# macOS tools (NSImage via swift to rasterize, sips to scale, iconutil to pack):
 #   Support/AppIcon.svg     -> Support/AppIcon.icns
 #   Support/MenuBarIcon.svg -> Support/MenuBarIcon.png + @2x (template image)
 set -euo pipefail
@@ -9,8 +9,27 @@ cd "$(dirname "$0")/.."
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-qlmanage -t -s 1024 -o "$TMP" Support/AppIcon.svg >/dev/null
-MASTER="$TMP/AppIcon.svg.png"
+# Rasterizes an SVG to a square PNG, preserving transparency (qlmanage would
+# composite onto an opaque white background, which breaks template images).
+rasterize() { # <svg> <size> <out.png>
+    swift - "$1" "$2" "$3" <<'EOF'
+import AppKit
+let args = CommandLine.arguments
+guard let svg = NSImage(contentsOfFile: args[1]), let size = Int(args[2]) else {
+    fatalError("cannot read \(args[1])")
+}
+let rep = NSBitmapImageRep(
+    bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8,
+    samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+    bytesPerRow: 0, bitsPerPixel: 0)!
+NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+svg.draw(in: NSRect(x: 0, y: 0, width: size, height: size))
+try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: args[3]))
+EOF
+}
+
+MASTER="$TMP/AppIcon.png"
+rasterize Support/AppIcon.svg 1024 "$MASTER"
 
 ICONSET="$TMP/AppIcon.iconset"
 mkdir "$ICONSET"
@@ -22,9 +41,7 @@ done
 
 iconutil -c icns "$ICONSET" -o Support/AppIcon.icns
 
-qlmanage -t -s 1008 -o "$TMP" Support/MenuBarIcon.svg >/dev/null
-MB_MASTER="$TMP/MenuBarIcon.svg.png"
-sips -z 18 18 "$MB_MASTER" --out Support/MenuBarIcon.png >/dev/null
-sips -z 36 36 "$MB_MASTER" --out Support/MenuBarIcon@2x.png >/dev/null
+rasterize Support/MenuBarIcon.svg 18 Support/MenuBarIcon.png
+rasterize Support/MenuBarIcon.svg 36 Support/MenuBarIcon@2x.png
 
 echo "Wrote Support/AppIcon.icns and Support/MenuBarIcon(@2x).png"
