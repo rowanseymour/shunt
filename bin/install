@@ -1,0 +1,12 @@
+#!/bin/bash
+# Builds Shunt.app and installs it to /Applications, replacing any running copy.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+bin/build
+pkill -f Shunt.app/Contents/MacOS/Shunt || true
+rm -rf /Applications/Shunt.app
+ditto build/Shunt.app /Applications/Shunt.app
+open /Applications/Shunt.app
+
+echo "Installed /Applications/Shunt.app"
