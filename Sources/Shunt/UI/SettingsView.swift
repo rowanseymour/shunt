@@ -116,7 +116,7 @@ struct SettingsView: View {
             Spacer()
             Image(systemName: "arrow.right")
                 .foregroundStyle(.secondary)
-            Text(model.destinationName(browserID: rule.browserID, profile: rule.profile))
+            Text(model.destinationName(browserID: rule.browserID, profile: rule.profile, privateWindow: rule.privateWindow))
             Button {
                 editingRule = rule
                 editingIsNew = false

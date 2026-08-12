@@ -159,6 +159,31 @@ import Testing
     }
 }
 
+@Suite struct PrivateWindowSupport {
+    @Test func chromiumBrowsersUseTheirOwnSwitch() {
+        #expect(PrivateWindows.argument(forBundleID: "com.google.Chrome") == "--incognito")
+        #expect(PrivateWindows.argument(forBundleID: "com.brave.Browser") == "--incognito")
+        // Edge spells it differently to the rest of the Chromium family.
+        #expect(PrivateWindows.argument(forBundleID: "com.microsoft.edgemac") == "--inprivate")
+        #expect(PrivateWindows.argument(forBundleID: "org.mozilla.firefox") == "--private-window")
+    }
+
+    @Test func safariAndUnknownBrowsersAreUnsupported() {
+        #expect(PrivateWindows.argument(forBundleID: "com.apple.Safari") == nil)
+        #expect(!PrivateWindows.isSupported(bundleID: "com.apple.Safari"))
+        #expect(!PrivateWindows.isSupported(bundleID: "com.example.SomeBrowser"))
+    }
+
+    @Test func everyBrowserWithProfilesCanAlsoGoPrivate() {
+        // Both features launch the executable directly, so the profile-capable browsers
+        // should all support a private window too.
+        for id in ["com.google.Chrome", "com.microsoft.edgemac", "com.brave.Browser", "com.vivaldi.Vivaldi", "org.chromium.Chromium"] {
+            #expect(ChromiumProfiles.dataDirectory(forBundleID: id) != nil)
+            #expect(PrivateWindows.isSupported(bundleID: id))
+        }
+    }
+}
+
 @Suite struct ConfigCodable {
     @Test func decodesMinimalHandEditedConfig() throws {
         let json = #"{"rules": [{"pattern": "*.example.com", "browserID": "com.google.Chrome"}]}"#
@@ -168,6 +193,7 @@ import Testing
         #expect(config.rules[0].enabled)
         #expect(config.rules[0].sourceApp == nil)
         #expect(config.rules[0].profile == nil)
+        #expect(!config.rules[0].privateWindow)
     }
 
     @Test func legacyPatternListExpandsIntoOneRulePerPattern() throws {
@@ -188,7 +214,7 @@ import Testing
     @Test func roundTrips() throws {
         let config = Config(
             fallbackBrowserID: "org.mozilla.firefox",
-            rules: [Rule(pattern: "localhost", sourceApp: "com.apple.dt.Xcode", browserID: "com.google.Chrome", profile: "Profile 1", enabled: false)]
+            rules: [Rule(pattern: "localhost", sourceApp: "com.apple.dt.Xcode", browserID: "com.google.Chrome", profile: "Profile 1", privateWindow: true, enabled: false)]
         )
         let data = try JSONEncoder().encode(config)
         let decoded = try JSONDecoder().decode(Config.self, from: data)

@@ -14,6 +14,9 @@ public struct Rule: Identifiable, Hashable, Sendable, Codable {
     /// Profile directory to open the URL in, e.g. "Profile 1". Only supported for
     /// Chromium-based browsers; nil means the browser's last-used profile.
     public var profile: String?
+    /// Open in a private window. Independent of `profile`, so a rule can ask for an
+    /// incognito window of a particular profile. Ignored by browsers without one.
+    public var privateWindow: Bool
     public var enabled: Bool
 
     /// Short human-readable label for menus and the recent-routes list.
@@ -24,15 +27,16 @@ public struct Rule: Identifiable, Hashable, Sendable, Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, pattern, sourceApp, browserID, profile, enabled
+        case id, pattern, sourceApp, browserID, profile, privateWindow, enabled
     }
 
-    public init(id: UUID = UUID(), pattern: String? = nil, sourceApp: String? = nil, browserID: String, profile: String? = nil, enabled: Bool = true) {
+    public init(id: UUID = UUID(), pattern: String? = nil, sourceApp: String? = nil, browserID: String, profile: String? = nil, privateWindow: Bool = false, enabled: Bool = true) {
         self.id = id
         self.pattern = pattern
         self.sourceApp = sourceApp
         self.browserID = browserID
         self.profile = profile
+        self.privateWindow = privateWindow
         self.enabled = enabled
     }
 
@@ -44,6 +48,7 @@ public struct Rule: Identifiable, Hashable, Sendable, Codable {
         sourceApp = try c.decodeIfPresent(String.self, forKey: .sourceApp)
         browserID = try c.decode(String.self, forKey: .browserID)
         profile = try c.decodeIfPresent(String.self, forKey: .profile)
+        privateWindow = try c.decodeIfPresent(Bool.self, forKey: .privateWindow) ?? false
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
     }
 }
