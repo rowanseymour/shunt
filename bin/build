@@ -1,0 +1,18 @@
+#!/bin/bash
+# Builds Shunt.app into build/ using only the command line tools (no Xcode required).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+CONFIG="${1:-release}"
+swift build -c "$CONFIG"
+
+BIN="$(swift build -c "$CONFIG" --show-bin-path)"
+APP="build/Shunt.app"
+
+rm -rf "$APP"
+mkdir -p "$APP/Contents/MacOS"
+cp "$BIN/Shunt" "$APP/Contents/MacOS/Shunt"
+cp Support/Info.plist "$APP/Contents/Info.plist"
+codesign --force --sign - "$APP"
+
+echo "Built $APP"

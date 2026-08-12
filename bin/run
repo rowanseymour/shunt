@@ -1,0 +1,7 @@
+#!/bin/bash
+# Builds and launches Shunt.app.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+bin/build "${1:-release}"
+open build/Shunt.app

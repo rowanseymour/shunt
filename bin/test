@@ -1,0 +1,7 @@
+#!/bin/bash
+# Runs the test suite. Uses a plain runner executable instead of `swift test`
+# because the command line tools toolchain lacks the test harness libraries.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+swift run shunt-tests "$@"
