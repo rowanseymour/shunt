@@ -21,11 +21,6 @@ struct MenuContent: View {
 
         Divider()
 
-        if !model.isDefaultBrowser {
-            Button("Set as default browser…") {
-                model.setAsDefaultBrowser()
-            }
-        }
         SettingsLink {
             Text("Settings…")
         }

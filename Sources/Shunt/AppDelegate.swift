@@ -16,6 +16,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
     }
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // One-time onboarding: after acceptance this never fires again.
+        if !AppModel.shared.isDefaultBrowser {
+            AppModel.shared.setAsDefaultBrowser()
+        }
+    }
+
     @objc private func handleGetURL(_ event: NSAppleEventDescriptor, replyEvent: NSAppleEventDescriptor) {
         guard let urlString = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject))?.stringValue,
               let url = URL(string: urlString) else { return }
