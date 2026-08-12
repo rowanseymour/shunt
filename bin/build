@@ -10,9 +10,11 @@ BIN="$(swift build -c "$CONFIG" --show-bin-path)"
 APP="build/Shunt.app"
 
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Shunt" "$APP/Contents/MacOS/Shunt"
 cp Support/Info.plist "$APP/Contents/Info.plist"
+cp Support/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp Support/MenuBarIcon.png Support/MenuBarIcon@2x.png "$APP/Contents/Resources/"
 codesign --force --sign - "$APP"
 
 echo "Built $APP"

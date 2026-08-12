@@ -1,0 +1,44 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b7de9"/>
+      <stop offset="1" stop-color="#0a4fb5"/>
+    </linearGradient>
+    <clipPath id="globeClip">
+      <circle cx="512" cy="512" r="300"/>
+    </clipPath>
+  </defs>
+
+  <!-- macOS squircle-ish background -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+
+  <!-- globe -->
+  <g clip-path="url(#globeClip)" stroke="#ffffff" stroke-opacity="0.35" stroke-width="14" fill="none">
+    <!-- latitudes -->
+    <path d="M 212 512 H 812"/>
+    <path d="M 232 392 H 792"/>
+    <path d="M 232 632 H 792"/>
+    <!-- meridians -->
+    <ellipse cx="512" cy="512" rx="140" ry="300"/>
+    <ellipse cx="512" cy="512" rx="260" ry="300"/>
+    <path d="M 512 212 V 812"/>
+  </g>
+  <circle cx="512" cy="512" r="300" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="18"/>
+
+  <!-- branching track -->
+  <g stroke-linecap="round" fill="none">
+    <g stroke="#ffffff" stroke-width="46">
+      <path d="M 300 512 H 470 C 560 512 580 392 670 392"/>
+      <path d="M 470 512 H 700"/>
+      <path d="M 470 512 C 560 512 580 632 670 632"/>
+    </g>
+  </g>
+
+  <!-- origin + termini -->
+  <circle cx="300" cy="512" r="40" fill="#ffffff"/>
+  <g stroke="#ffffff" stroke-width="16">
+    <circle cx="690" cy="392" r="44" fill="#43c463"/>
+    <circle cx="720" cy="512" r="44" fill="#ffc61a"/>
+    <circle cx="690" cy="632" r="44" fill="#ff6b3d"/>
+  </g>
+</svg>
