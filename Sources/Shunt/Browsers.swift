@@ -46,24 +46,31 @@ enum Browsers {
         return ChromiumProfiles.parse(localState: data)
     }
 
-    static func open(_ url: URL, inBrowserWithID id: String, profile: String? = nil) {
+    static func open(_ url: URL, inBrowserWithID id: String, profile: String? = nil, privateWindow: Bool = false) {
+        var arguments: [String] = []
+        if let profile, ChromiumProfiles.dataDirectory(forBundleID: id) != nil {
+            arguments.append("--profile-directory=\(profile)")
+        }
+        if privateWindow, let argument = PrivateWindows.argument(forBundleID: id) {
+            arguments.append(argument)
+        }
+        if !arguments.isEmpty, launch(url, browserID: id, arguments: arguments) { return }
+
         let workspace = NSWorkspace.shared
-        if let profile, openInProfile(url, browserID: id, profile: profile) { return }
         guard let appURL = workspace.urlForApplication(withBundleIdentifier: id)
             ?? workspace.urlForApplication(withBundleIdentifier: "com.apple.Safari") else { return }
         workspace.open([url], withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
     }
 
-    /// NSWorkspace can't pass arguments to an already-running app, so profile routing
-    /// launches the browser executable directly — Chromium hands the URL over to any
-    /// existing instance and exits.
-    private static func openInProfile(_ url: URL, browserID: String, profile: String) -> Bool {
-        guard ChromiumProfiles.dataDirectory(forBundleID: browserID) != nil,
-              let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browserID),
+    /// NSWorkspace can't pass arguments to an already-running app, so any routing that
+    /// needs a switch launches the browser executable directly — it hands the URL and
+    /// switches over to an existing instance and exits.
+    private static func launch(_ url: URL, browserID: String, arguments: [String]) -> Bool {
+        guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browserID),
               let executable = Bundle(url: appURL)?.executableURL else { return false }
         let process = Process()
         process.executableURL = executable
-        process.arguments = ["--profile-directory=\(profile)", url.absoluteString]
+        process.arguments = arguments + [url.absoluteString]
         do {
             try process.run()
             return true

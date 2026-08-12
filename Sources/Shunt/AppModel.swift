@@ -60,27 +60,33 @@ final class AppModel {
         browsers.first { $0.id == id }?.name ?? id
     }
 
-    /// Human-readable target, e.g. "Chrome" or "Chrome (Work)".
-    func destinationName(browserID: String, profile: String?) -> String {
+    /// Human-readable target, e.g. "Chrome", "Chrome (Work)" or "Chrome (Work, Private)".
+    func destinationName(browserID: String, profile: String?, privateWindow: Bool = false) -> String {
         let name = browserName(for: browserID)
-        guard let profile else { return name }
-        let profileName = profilesByBrowser[browserID]?.first { $0.directory == profile }?.name ?? profile
-        return "\(name) (\(profileName))"
+        var qualifiers: [String] = []
+        if let profile {
+            qualifiers.append(profilesByBrowser[browserID]?.first { $0.directory == profile }?.name ?? profile)
+        }
+        if privateWindow, PrivateWindows.isSupported(bundleID: browserID) {
+            qualifiers.append("Private")
+        }
+        guard !qualifiers.isEmpty else { return name }
+        return "\(name) (\(qualifiers.joined(separator: ", ")))"
     }
 
     func route(_ url: URL, from sourceApp: String?) {
-        let browserID: String
-        let profile: String?
-        let ruleLabel: String
-        if paused {
-            (browserID, profile, ruleLabel) = (config.fallbackBrowserID, nil, "paused")
-        } else if let rule = RuleMatcher.firstMatch(for: url, sourceApp: sourceApp, in: config.rules) {
-            (browserID, profile, ruleLabel) = (rule.browserID, rule.profile, rule.label)
-        } else {
-            (browserID, profile, ruleLabel) = (config.fallbackBrowserID, nil, "fallback")
-        }
-        Browsers.open(url, inBrowserWithID: browserID, profile: profile)
-        recent.insert(RouteRecord(url: url.absoluteString, destination: destinationName(browserID: browserID, profile: profile), ruleLabel: ruleLabel), at: 0)
+        let matched = paused ? nil : RuleMatcher.firstMatch(for: url, sourceApp: sourceApp, in: config.rules)
+        let browserID = matched?.browserID ?? config.fallbackBrowserID
+        let profile = matched?.profile
+        let privateWindow = matched?.privateWindow ?? false
+        let ruleLabel = matched?.label ?? (paused ? "paused" : "fallback")
+
+        Browsers.open(url, inBrowserWithID: browserID, profile: profile, privateWindow: privateWindow)
+        recent.insert(RouteRecord(
+            url: url.absoluteString,
+            destination: destinationName(browserID: browserID, profile: profile, privateWindow: privateWindow),
+            ruleLabel: ruleLabel
+        ), at: 0)
         if recent.count > 5 {
             recent.removeLast(recent.count - 5)
         }

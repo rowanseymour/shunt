@@ -25,6 +25,8 @@ Matching is case-insensitive and ignores query strings.
 
 For Chromium-based browsers (Chrome, Edge, Brave, Vivaldi, …) a rule can also target a specific browser profile, so work links can open in your work profile and everything else in your personal one.
 
+A rule can additionally ask for a private window. This is independent of the profile, so a rule can open an incognito window of a particular profile. It works for the Chromium browsers and Firefox; Safari has no way to be told this from outside, so the option isn't offered for it.
+
 Config is stored as JSON in `~/Library/Application Support/Shunt/config.json`.
 
 ## Building

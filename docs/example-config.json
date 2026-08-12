@@ -16,6 +16,11 @@
       "profile": "Profile 1"
     },
     {
+      "pattern": "docs.google.com",
+      "browserID": "com.google.Chrome",
+      "privateWindow": true
+    },
+    {
       "sourceApp": "com.tinyspeck.slackmacgap",
       "browserID": "com.apple.Safari"
     }

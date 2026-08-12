@@ -23,6 +23,12 @@ struct RuleEditor: View {
         _sourceAppText = State(initialValue: rule.sourceApp ?? "")
     }
 
+    /// Safari has no private-window switch, so the toggle is hidden rather than shown
+    /// as something that would be silently ignored.
+    private var supportsPrivateWindows: Bool {
+        PrivateWindows.isSupported(bundleID: rule.browserID)
+    }
+
     /// Profiles of the selected browser, keeping a stale selection visible so the
     /// picker stays valid if the profile was deleted since the rule was created.
     private var profiles: [BrowserProfile] {
@@ -58,6 +64,7 @@ struct RuleEditor: View {
                 }
                 .onChange(of: rule.browserID) {
                     rule.profile = nil
+                    rule.privateWindow = rule.privateWindow && supportsPrivateWindows
                 }
 
                 if !profiles.isEmpty {
@@ -67,6 +74,10 @@ struct RuleEditor: View {
                             Text(profile.name).tag(String?.some(profile.directory))
                         }
                     }
+                }
+
+                if supportsPrivateWindows {
+                    Toggle("Open in a private window", isOn: $rule.privateWindow)
                 }
             }
 
